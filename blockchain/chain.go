@@ -20,6 +20,7 @@ func (chain *BlockChain) AddBlock(data string) error {
 }
 
 func Genesis() (*Block, error) {
+	tracer.Trace("Creating genesis block")
 	// @TODO: put this in either from env, or some config.
 	return NewBlock("Geneisis", []byte{})
 }

@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+	blockchain.SetTracer(&simpleTracer{})
 	chain, err := blockchain.InitBlockChain()
 	if err != nil {
 		log.Fatal(err)

@@ -3,28 +3,32 @@ package blockchain
 import (
 	"bytes"
 	"crypto/sha256"
-	"fmt"
 	"math"
 	"math/big"
 )
 
-// Take the data from the block
-// create a counter (nounce) which starts at 0
-// create a hash of data plus counter
-// check the hash to see if it meets a set of requirements (quite vauge)
+var Difficulty uint = 12
 
-// Requirements:
-// The First few bits must contains 0s
+func SetDificulty(difficulty uint) {
+	Difficulty = difficulty
+}
 
-const Difficulty = 12
-
+// @TODO: make this interface, the Block and Chain should rely on POW interface{} only
 type ProofOfWork struct {
 	// @TODO: make these private
 	Block  *Block
 	Target *big.Int
 }
 
+// Take the data from the block
+// create a counter (nonce) which starts at 0
+// create a hash of data plus counter
+// check the hash to see if it meets a set of requirements (quite vauge)
+
+// Requirements:
+// The First few bits must contains 0s
 func (p *ProofOfWork) Run() (int, []byte, error) {
+	tracer.Trace("Starting to run proof of work...")
 	var intHash big.Int
 	var hash [32]byte
 
@@ -36,7 +40,7 @@ func (p *ProofOfWork) Run() (int, []byte, error) {
 		}
 		hash = sha256.Sum256(data)
 
-		fmt.Printf("\r%x", hash)
+		tracer.TraceCarriagef("\r%x", hash)
 
 		intHash.SetBytes(hash[:])
 		if intHash.Cmp(p.Target) == -1 {
@@ -45,7 +49,8 @@ func (p *ProofOfWork) Run() (int, []byte, error) {
 		nonce++
 	}
 
-	fmt.Println()
+	tracer.Trace("")
+	tracer.Trace("Finish proof of work")
 
 	return nonce, hash[:], nil
 }
@@ -63,6 +68,7 @@ func (p *ProofOfWork) Validate() (bool, error) {
 	return intHash.Cmp(p.Target) == -1, nil
 }
 
+// @TODO: Make this flexible
 func NewProof(block *Block) *ProofOfWork {
 	// Underlying byte look like this
 	target := big.NewInt(1)
@@ -83,7 +89,7 @@ func (p *ProofOfWork) InitData(nonce int) ([]byte, error) {
 		return nil, err
 	}
 
-	diffBytes, err := toHex(Difficulty)
+	diffBytes, err := toHex(int64(Difficulty))
 	if err != nil {
 		return nil, err
 	}

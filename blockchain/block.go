@@ -14,6 +14,7 @@ type Block struct {
 }
 
 func NewBlock(data string, prevHash []byte) (*Block, error) {
+	tracer.Tracef("Create new block with data: %x, prevHash: %x", data, prevHash)
 	block := &Block{[]byte{}, []byte(data), prevHash, 0}
 	p := NewProof(block)
 
