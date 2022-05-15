@@ -5,15 +5,13 @@ import (
 	"encoding/binary"
 )
 
-// @TODO: return error here
-func toHex(num int64) []byte {
+func toHex(num int64) ([]byte, error) {
 	buff := new(bytes.Buffer)
 
 	err := binary.Write(buff, binary.BigEndian, num)
 	if err != nil {
-		// bad practice
-		panic(err)
+		return nil, err
 	}
 
-	return buff.Bytes()
+	return buff.Bytes(), nil
 }

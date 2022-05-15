@@ -24,13 +24,16 @@ type ProofOfWork struct {
 	Target *big.Int
 }
 
-func (p *ProofOfWork) Run() (int, []byte) {
+func (p *ProofOfWork) Run() (int, []byte, error) {
 	var intHash big.Int
 	var hash [32]byte
 
 	nonce := 0
 	for nonce < math.MaxInt64 {
-		data := p.InitData(nonce)
+		data, err := p.InitData(nonce)
+		if err != nil {
+			return -1, nil, err
+		}
 		hash = sha256.Sum256(data)
 
 		fmt.Printf("\r%x", hash)
@@ -44,17 +47,20 @@ func (p *ProofOfWork) Run() (int, []byte) {
 
 	fmt.Println()
 
-	return nonce, hash[:]
+	return nonce, hash[:], nil
 }
 
-func (p *ProofOfWork) Validate() bool {
+func (p *ProofOfWork) Validate() (bool, error) {
 	var intHash big.Int
 
-	data := p.InitData(p.Block.Nonce)
+	data, err := p.InitData(p.Block.Nonce)
+	if err != nil {
+		return false, err
+	}
 	hash := sha256.Sum256(data)
 	intHash.SetBytes(hash[:])
 
-	return intHash.Cmp(p.Target) == -1
+	return intHash.Cmp(p.Target) == -1, nil
 }
 
 func NewProof(block *Block) *ProofOfWork {
@@ -71,13 +77,23 @@ func NewProof(block *Block) *ProofOfWork {
 	}
 }
 
-func (p *ProofOfWork) InitData(nounce int) []byte {
+func (p *ProofOfWork) InitData(nonce int) ([]byte, error) {
+	nonceBytes, err := toHex(int64(nonce))
+	if err != nil {
+		return nil, err
+	}
+
+	diffBytes, err := toHex(Difficulty)
+	if err != nil {
+		return nil, err
+	}
+
 	data := bytes.Join([][]byte{
 		p.Block.Prevhash,
 		p.Block.Data,
-		toHex(int64(nounce)),
-		toHex(int64(Difficulty)),
+		nonceBytes,
+		diffBytes,
 	}, []byte{})
 
-	return data
+	return data, nil
 }

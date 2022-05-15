@@ -13,14 +13,18 @@ type Block struct {
 	Nonce    int
 }
 
-func NewBlock(data string, prevHash []byte) *Block {
+func NewBlock(data string, prevHash []byte) (*Block, error) {
 	block := &Block{[]byte{}, []byte(data), prevHash, 0}
 	p := NewProof(block)
-	nonce, hash := p.Run()
+
+	nonce, hash, err := p.Run()
+	if err != nil {
+		return nil, err
+	}
 	block.Hash = hash
 	block.Nonce = nonce
 
-	return block
+	return block, nil
 }
 
 func (b *Block) Serialize() []byte {

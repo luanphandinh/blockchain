@@ -2,16 +2,29 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/luanphandinh/blockchain/blockchain"
 )
 
 func main() {
-	chain := blockchain.InitBlockChain()
+	chain, err := blockchain.InitBlockChain()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	chain.AddBlock("First block after Genesis")
-	chain.AddBlock("Second block after Genesis")
-	chain.AddBlock("Third block after Genesis")
+	blocks := []string{
+		"First block after Genesis",
+		"Second block after Genesis",
+		"Third block after Genesis",
+	}
+
+	for _, block := range blocks {
+		err := chain.AddBlock(block)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
 	for _, block := range chain.GetBlocks() {
 		fmt.Printf("PrevHash: %x\n", block.Prevhash)
@@ -19,6 +32,10 @@ func main() {
 		fmt.Printf("Hash: %x\n", block.Hash)
 
 		p := blockchain.NewProof(block)
-		fmt.Printf("target: %x, validated: %v\n", p.Target, p.Validate())
+		validated, err := p.Validate()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("target: %x, validated: %v\n", p.Target, validated)
 	}
 }
