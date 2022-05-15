@@ -17,5 +17,8 @@ func main() {
 		fmt.Printf("PrevHash: %x\n", block.Prevhash)
 		fmt.Printf("Data: %s\n", block.Data)
 		fmt.Printf("Hash: %x\n", block.Hash)
+
+		p := blockchain.NewProof(block)
+		fmt.Printf("target: %x, validated: %v\n", p.Target, p.Validate())
 	}
 }
