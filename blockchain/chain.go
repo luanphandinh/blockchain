@@ -1,8 +1,52 @@
 package blockchain
 
-// Simple version for now.
 type BlockChain struct {
-	blocks []*Block
+	blocks  []*Block
+	storage Storage
+}
+
+func Genesis() (*Block, error) {
+	tracer.Trace("Creating genesis block")
+	// @TODO: put this in either from env, or some config.
+	return NewBlock("Geneisis", []byte{})
+}
+
+func InitBlockChain(storage Storage) (*BlockChain, error) {
+	if storage == nil {
+		tracer.Trace("InitBlockChain with default memoryStorage")
+		storage = newMemoryStorage()
+	}
+
+	lastBlock, err := storage.GetLastBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	blocks := make([]*Block, 0)
+	if lastBlock == nil {
+		genesis, err := Genesis()
+		if err != nil {
+			return nil, err
+		}
+
+		err = storage.AddBlock(genesis)
+		if err != nil {
+			return nil, err
+		}
+
+		blocks = append(blocks, genesis)
+	} else {
+		blocks = append(blocks, lastBlock)
+	}
+
+	return &BlockChain{
+		blocks:  blocks,
+		storage: storage,
+	}, nil
+}
+
+func (chain *BlockChain) GetBlocks() []*Block {
+	return chain.blocks
 }
 
 func (chain *BlockChain) AddBlock(data string) error {
@@ -17,23 +61,4 @@ func (chain *BlockChain) AddBlock(data string) error {
 
 	chain.blocks = append(chain.blocks, newBlock)
 	return nil
-}
-
-func Genesis() (*Block, error) {
-	tracer.Trace("Creating genesis block")
-	// @TODO: put this in either from env, or some config.
-	return NewBlock("Geneisis", []byte{})
-}
-
-func InitBlockChain() (*BlockChain, error) {
-	genesis, err := Genesis()
-	if err != nil {
-		return nil, err
-	}
-
-	return &BlockChain{[]*Block{genesis}}, nil
-}
-
-func (chain *BlockChain) GetBlocks() []*Block {
-	return chain.blocks
 }
