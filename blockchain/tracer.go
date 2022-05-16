@@ -1,12 +1,14 @@
 package blockchain
 
+import "context"
+
 type Tracer interface {
-	Trace(msg string)
-	Tracef(msg string, args ...interface{})
+	Trace(ctx context.Context, msg string)
+	Tracef(ctx context.Context, msg string, args ...interface{})
 
 	// Special function for trace carriage data
 	// the msg return will have the format of `\r`
-	TraceCarriagef(msg string, args ...interface{})
+	TraceCarriagef(ctx context.Context, msg string, args ...interface{})
 }
 
 var tracer Tracer = &doNothingTracer{}
@@ -20,6 +22,6 @@ func SetTracer(t Tracer) {
 
 type doNothingTracer struct{}
 
-func (t *doNothingTracer) Trace(msg string)                               {}
-func (t *doNothingTracer) Tracef(msg string, args ...interface{})         {}
-func (t *doNothingTracer) TraceCarriagef(msg string, args ...interface{}) {}
+func (t *doNothingTracer) Trace(ctx context.Context, msg string)                               {}
+func (t *doNothingTracer) Tracef(ctx context.Context, msg string, args ...interface{})         {}
+func (t *doNothingTracer) TraceCarriagef(ctx context.Context, msg string, args ...interface{}) {}

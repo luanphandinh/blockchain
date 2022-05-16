@@ -2,14 +2,15 @@ package blockchain
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"math"
 	"math/big"
 )
 
 type ProofOfWork interface {
-	Run(*Block) error
-	Validate(*Block) (validated bool, err error)
+	Run(ctx context.Context, b *Block) error
+	Validate(ctx context.Context, b *Block) (validated bool, err error)
 }
 
 var Difficulty uint = 12
@@ -29,8 +30,8 @@ type SimpleProofOfWork struct {
 	Target *big.Int
 }
 
-func (p *SimpleProofOfWork) Run(block *Block) error {
-	tracer.Trace("Starting to run proof of work...")
+func (p *SimpleProofOfWork) Run(ctx context.Context, block *Block) error {
+	tracer.Trace(ctx, "Starting to run proof of work...")
 	var intHash big.Int
 	var hash [32]byte
 
@@ -42,7 +43,7 @@ func (p *SimpleProofOfWork) Run(block *Block) error {
 		}
 		hash = sha256.Sum256(data)
 
-		tracer.TraceCarriagef("\r%x", hash)
+		tracer.TraceCarriagef(ctx, "\r%x", hash)
 
 		intHash.SetBytes(hash[:])
 		if intHash.Cmp(p.Target) == -1 {
@@ -51,8 +52,8 @@ func (p *SimpleProofOfWork) Run(block *Block) error {
 		nonce++
 	}
 
-	tracer.Trace("")
-	tracer.Trace("Finish proof of work")
+	tracer.Trace(ctx, "")
+	tracer.Trace(ctx, "Finish proof of work")
 
 	block.Nonce = nonce
 	block.Hash = hash[:]
@@ -60,7 +61,7 @@ func (p *SimpleProofOfWork) Run(block *Block) error {
 	return nil
 }
 
-func (p *SimpleProofOfWork) Validate(block *Block) (bool, error) {
+func (p *SimpleProofOfWork) Validate(_ context.Context, block *Block) (bool, error) {
 	var intHash big.Int
 
 	data, err := p.InitData(block, block.Nonce)

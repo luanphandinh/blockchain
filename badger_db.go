@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/dgraph-io/badger/v3"
 	"github.com/luanphandinh/blockchain/blockchain"
 )
@@ -26,11 +28,11 @@ func newBaderDbStorage(path string, lastHashKey []byte, debug bool) (*BadgerDbSt
 	}, nil
 }
 
-func (s *BadgerDbStorage) GetLastBlock() (*blockchain.Block, error) {
-	return s.GetBlock(s.lastHashKey)
+func (s *BadgerDbStorage) GetLastBlock(ctx context.Context) (*blockchain.Block, error) {
+	return s.GetBlock(ctx, s.lastHashKey)
 }
 
-func (s *BadgerDbStorage) AddBlock(b *blockchain.Block) error {
+func (s *BadgerDbStorage) AddBlock(ctx context.Context, b *blockchain.Block) error {
 	err := s.db.Update(func(txn *badger.Txn) error {
 		bytes, err := b.Serialize()
 		if err != nil {
@@ -49,7 +51,7 @@ func (s *BadgerDbStorage) AddBlock(b *blockchain.Block) error {
 	return nil
 }
 
-func (s *BadgerDbStorage) GetBlock(key []byte) (*blockchain.Block, error) {
+func (s *BadgerDbStorage) GetBlock(ctx context.Context, key []byte) (*blockchain.Block, error) {
 	var block *blockchain.Block
 	err := s.db.View(func(txn *badger.Txn) error {
 		encodedBlock, err := txn.Get(key)
@@ -73,10 +75,6 @@ func (s *BadgerDbStorage) GetBlock(key []byte) (*blockchain.Block, error) {
 	}
 
 	return block, nil
-}
-
-func (s *BadgerDbStorage) GetBlocks() ([]*blockchain.Block, error) {
-	return nil, nil
 }
 
 func (s *BadgerDbStorage) Close() error {

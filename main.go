@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 
@@ -8,6 +9,7 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
 	flag.Parse()
 	if *debug {
 		blockchain.SetTracer(&simpleTracer{})
@@ -19,11 +21,11 @@ func main() {
 	}
 	defer db.Close()
 
-	chain, err := blockchain.InitBlockChain(db, nil)
+	chain, err := blockchain.InitBlockChain(ctx, db, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	cmd := &CommandLine{chain}
-	cmd.Run()
+	cmd.Run(ctx)
 }

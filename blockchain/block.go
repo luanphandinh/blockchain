@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 )
 
@@ -12,8 +13,8 @@ type Block struct {
 	Nonce    int
 }
 
-func NewBlock(data string, prevHash []byte) *Block {
-	tracer.Tracef("Create new block with data: %x, prevHash: %x", data, prevHash)
+func NewBlock(ctx context.Context, data string, prevHash []byte) *Block {
+	tracer.Tracef(ctx, "Create new block with data: %x, prevHash: %x", data, prevHash)
 	block := &Block{[]byte{}, []byte(data), prevHash, 0}
 
 	return block

@@ -1,10 +1,11 @@
 package blockchain
 
+import "context"
+
 type Storage interface {
-	GetLastBlock() (*Block, error)
-	GetBlocks() ([]*Block, error)
-	GetBlock(key []byte) (*Block, error)
-	AddBlock(b *Block) error
+	GetLastBlock(ctx context.Context) (*Block, error)
+	GetBlock(ctx context.Context, key []byte) (*Block, error)
+	AddBlock(ctx context.Context, b *Block) error
 }
 
 type memoryStorage struct {
@@ -19,7 +20,7 @@ func newMemoryStorage() Storage {
 	}
 }
 
-func (s *memoryStorage) GetLastBlock() (*Block, error) {
+func (s *memoryStorage) GetLastBlock(ctx context.Context) (*Block, error) {
 	if len(s.blocks) == 0 {
 		return nil, nil
 	}
@@ -27,21 +28,17 @@ func (s *memoryStorage) GetLastBlock() (*Block, error) {
 	return s.blocks[len(s.blocks)-1], nil
 }
 
-func (s *memoryStorage) AddBlock(b *Block) error {
+func (s *memoryStorage) AddBlock(ctx context.Context, b *Block) error {
 	s.blocks = append(s.blocks, b)
 	s.mapKeyToBlock[string(b.Hash)] = b
 
 	return nil
 }
 
-func (s *memoryStorage) GetBlock(key []byte) (*Block, error) {
+func (s *memoryStorage) GetBlock(ctx context.Context, key []byte) (*Block, error) {
 	if block, ok := s.mapKeyToBlock[string(key)]; ok {
 		return block, nil
 	}
 
 	return nil, nil
-}
-
-func (s *memoryStorage) GetBlocks() ([]*Block, error) {
-	return s.blocks, nil
 }

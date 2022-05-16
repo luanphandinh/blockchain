@@ -1,5 +1,7 @@
 package blockchain
 
+import "context"
+
 type BlockChain struct {
 	storage Storage
 	pow     ProofOfWork
@@ -10,14 +12,18 @@ type BlockChainIterator struct {
 	chain        *BlockChain
 }
 
-func InitBlockChain(storage Storage, pow ProofOfWork) (*BlockChain, error) {
+func InitBlockChain(
+	ctx context.Context,
+	storage Storage,
+	pow ProofOfWork,
+) (*BlockChain, error) {
 	if storage == nil {
-		tracer.Trace("InitBlockChain with default memoryStorage")
+		tracer.Trace(ctx, "InitBlockChain with default memoryStorage")
 		storage = newMemoryStorage()
 	}
 
 	if pow == nil {
-		tracer.Trace("InitBlockChain with default simpleProofOfWork")
+		tracer.Trace(ctx, "InitBlockChain with default simpleProofOfWork")
 		pow = NewProof()
 	}
 
@@ -26,18 +32,18 @@ func InitBlockChain(storage Storage, pow ProofOfWork) (*BlockChain, error) {
 		pow:     pow,
 	}
 
-	lastBlock, err := storage.GetLastBlock()
+	lastBlock, err := storage.GetLastBlock(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	if lastBlock == nil {
-		genesis, err := chain.Genesis()
+		genesis, err := chain.Genesis(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		err = storage.AddBlock(genesis)
+		err = storage.AddBlock(ctx, genesis)
 		if err != nil {
 			return nil, err
 		}
@@ -46,16 +52,20 @@ func InitBlockChain(storage Storage, pow ProofOfWork) (*BlockChain, error) {
 	return chain, nil
 }
 
-func (chain *BlockChain) Genesis() (*Block, error) {
-	tracer.Trace("Creating genesis block")
+func (chain *BlockChain) Genesis(ctx context.Context) (*Block, error) {
+	tracer.Trace(ctx, "Creating genesis block")
 	// @TODO: put this in either from env, or some config.
-	return chain.NewBlock("Geneisis", []byte{})
+	return chain.NewBlock(ctx, "Geneisis", []byte{})
 }
 
-func (chain *BlockChain) NewBlock(data string, prevHash []byte) (*Block, error) {
-	newBlock := NewBlock(data, prevHash)
+func (chain *BlockChain) NewBlock(
+	ctx context.Context,
+	data string,
+	prevHash []byte,
+) (*Block, error) {
+	newBlock := NewBlock(ctx, data, prevHash)
 
-	err := chain.pow.Run(newBlock)
+	err := chain.pow.Run(ctx, newBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -63,36 +73,35 @@ func (chain *BlockChain) NewBlock(data string, prevHash []byte) (*Block, error) 
 	return newBlock, nil
 }
 
-func (chain *BlockChain) ValidateBlock(block *Block) (bool, error) {
-	return chain.pow.Validate(block)
+func (chain *BlockChain) ValidateBlock(ctx context.Context, block *Block) (bool, error) {
+	return chain.pow.Validate(ctx, block)
 }
 
-func (chain *BlockChain) AddBlock(data string) error {
-	prevBlock, err := chain.storage.GetLastBlock()
+func (chain *BlockChain) AddBlock(ctx context.Context, data string) error {
+	prevBlock, err := chain.storage.GetLastBlock(ctx)
 	if err != nil {
 		return err
 	}
 
-	newBlock, err := chain.NewBlock(data, prevBlock.Hash)
+	newBlock, err := chain.NewBlock(ctx, data, prevBlock.Hash)
 	if err != nil {
 		return err
 	}
 
-	chain.storage.AddBlock(newBlock)
-	return nil
+	return chain.storage.AddBlock(ctx, newBlock)
 }
 
 func (chain *BlockChain) NewIterator() *BlockChainIterator {
 	return &BlockChainIterator{nil, chain}
 }
 
-func (iterator *BlockChainIterator) Next() (*Block, error) {
+func (iterator *BlockChainIterator) Next(ctx context.Context) (*Block, error) {
 	var block *Block
 	var err error
 	if iterator.currentBlock == nil {
-		block, err = iterator.chain.storage.GetLastBlock()
+		block, err = iterator.chain.storage.GetLastBlock(ctx)
 	} else {
-		block, err = iterator.chain.storage.GetBlock(iterator.currentBlock.Prevhash)
+		block, err = iterator.chain.storage.GetBlock(ctx, iterator.currentBlock.Prevhash)
 	}
 
 	iterator.currentBlock = block

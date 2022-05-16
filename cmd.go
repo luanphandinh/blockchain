@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -18,26 +19,26 @@ type CommandLine struct {
 	chain *blockchain.BlockChain
 }
 
-func (c *CommandLine) Run() {
+func (c *CommandLine) Run(ctx context.Context) {
 	if *addBlock != "" {
-		c.AddBlock(*addBlock)
+		c.AddBlock(ctx, *addBlock)
 	}
 
 	if *printChain {
-		c.Print()
+		c.Print(ctx)
 	}
 
 	fmt.Println("Done...")
 }
 
-func (c *CommandLine) AddBlock(data string) {
-	c.chain.AddBlock(data)
+func (c *CommandLine) AddBlock(ctx context.Context, data string) {
+	c.chain.AddBlock(ctx, data)
 }
 
-func (c *CommandLine) Print() {
+func (c *CommandLine) Print(ctx context.Context) {
 	iterator := c.chain.NewIterator()
 	for {
-		block, err := iterator.Next()
+		block, err := iterator.Next(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -50,7 +51,7 @@ func (c *CommandLine) Print() {
 		fmt.Printf("Data: %s\n", block.Data)
 		fmt.Printf("Hash: %x\n", block.Hash)
 
-		validated, err := c.chain.ValidateBlock(block)
+		validated, err := c.chain.ValidateBlock(ctx, block)
 		if err != nil {
 			log.Fatal(err)
 		}
