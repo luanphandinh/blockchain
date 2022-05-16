@@ -2,6 +2,7 @@ package blockchain
 
 type Storage interface {
 	GetLastBlock() (*Block, error)
+	GetBlocks() ([]*Block, error)
 	GetBlock(key []byte) (*Block, error)
 	AddBlock(b *Block) error
 }
@@ -39,4 +40,8 @@ func (s *memoryStorage) GetBlock(key []byte) (*Block, error) {
 	}
 
 	return nil, nil
+}
+
+func (s *memoryStorage) GetBlocks() ([]*Block, error) {
+	return s.blocks, nil
 }

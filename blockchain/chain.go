@@ -1,7 +1,6 @@
 package blockchain
 
 type BlockChain struct {
-	blocks  []*Block
 	storage Storage
 }
 
@@ -17,6 +16,7 @@ func InitBlockChain(storage Storage) (*BlockChain, error) {
 		storage = newMemoryStorage()
 	}
 
+	// @TODO: probs need to start transaction wrapper here
 	lastBlock, err := storage.GetLastBlock()
 	if err != nil {
 		return nil, err
@@ -40,25 +40,26 @@ func InitBlockChain(storage Storage) (*BlockChain, error) {
 	}
 
 	return &BlockChain{
-		blocks:  blocks,
 		storage: storage,
 	}, nil
 }
 
 func (chain *BlockChain) GetBlocks() []*Block {
-	return chain.blocks
+	blocks, _ := chain.storage.GetBlocks()
+	return blocks
 }
 
 func (chain *BlockChain) AddBlock(data string) error {
-	// @TODO: return error for this function
-	// This will fail in terms of empty blocks
-	// Caller need to create genesis block first.
-	prevBlock := chain.blocks[len(chain.blocks)-1]
+	prevBlock, err := chain.storage.GetLastBlock()
+	if err != nil {
+		return err
+	}
+
 	newBlock, err := NewBlock(data, prevBlock.Hash)
 	if err != nil {
 		return err
 	}
 
-	chain.blocks = append(chain.blocks, newBlock)
+	chain.storage.AddBlock(newBlock)
 	return nil
 }

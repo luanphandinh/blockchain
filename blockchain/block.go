@@ -3,7 +3,6 @@ package blockchain
 import (
 	"bytes"
 	"encoding/gob"
-	"log"
 )
 
 type Block struct {
@@ -28,29 +27,27 @@ func NewBlock(data string, prevHash []byte) (*Block, error) {
 	return block, nil
 }
 
-func (b *Block) Serialize() []byte {
+func (b *Block) Serialize() ([]byte, error) {
 	var res bytes.Buffer
 	encoder := gob.NewEncoder(&res)
 
 	err := encoder.Encode(b)
 
 	if err != nil {
-		// @TODO: return err, bad practice
-		log.Panic(err)
+		return nil, err
 	}
 
-	return res.Bytes()
+	return res.Bytes(), nil
 }
 
-func Deserialize(data []byte) *Block {
+func DeserializeBlock(data []byte) (*Block, error) {
 	var block Block
 
 	decoder := gob.NewDecoder(bytes.NewReader(data))
 	err := decoder.Decode(&block)
 	if err != nil {
-		// @TODO: return err, bad practice
-		log.Panic(err)
+		return nil, err
 	}
 
-	return &block
+	return &block, nil
 }

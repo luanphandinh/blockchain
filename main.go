@@ -9,7 +9,12 @@ import (
 
 func main() {
 	blockchain.SetTracer(&simpleTracer{})
-	chain, err := blockchain.InitBlockChain(nil)
+	db, err := newBaderDbStorage("./tmp/db", []byte("last_hash"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	chain, err := blockchain.InitBlockChain(db)
 	if err != nil {
 		log.Fatal(err)
 	}
