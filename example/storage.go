@@ -28,18 +28,18 @@ func newBaderDbStorage(path string, lastHashKey []byte, debug bool) (*BadgerDbSt
 	}, nil
 }
 
-func (s *BadgerDbStorage) GetLastBlock(ctx context.Context) (*blockchain.Block, error) {
+func (s *BadgerDbStorage) GetLastBlock(ctx context.Context) (blockchain.Block, error) {
 	return s.GetBlock(ctx, s.lastHashKey)
 }
 
-func (s *BadgerDbStorage) AddBlock(ctx context.Context, b *blockchain.Block) error {
+func (s *BadgerDbStorage) AddBlock(ctx context.Context, b blockchain.Block) error {
 	err := s.db.Update(func(txn *badger.Txn) error {
-		bytes, err := b.Serialize()
+		bytes, err := b.Marshal()
 		if err != nil {
 			return err
 		}
 
-		err = txn.Set(b.Hash, bytes)
+		err = txn.Set(b.GetHash(), bytes)
 		err = txn.Set(s.lastHashKey, bytes)
 		return err
 	})
@@ -51,8 +51,8 @@ func (s *BadgerDbStorage) AddBlock(ctx context.Context, b *blockchain.Block) err
 	return nil
 }
 
-func (s *BadgerDbStorage) GetBlock(ctx context.Context, key []byte) (*blockchain.Block, error) {
-	var block *blockchain.Block
+func (s *BadgerDbStorage) GetBlock(ctx context.Context, key []byte) (blockchain.Block, error) {
+	block := &blockchain.SimpleBlock{}
 	err := s.db.View(func(txn *badger.Txn) error {
 		encodedBlock, err := txn.Get(key)
 		if err != nil {
@@ -63,7 +63,7 @@ func (s *BadgerDbStorage) GetBlock(ctx context.Context, key []byte) (*blockchain
 		}
 
 		err = encodedBlock.Value(func(val []byte) error {
-			block, err = blockchain.DeserializeBlock(val)
+			err := block.Unmarshal(val)
 			return err
 		})
 

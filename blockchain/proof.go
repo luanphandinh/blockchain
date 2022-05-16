@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"errors"
 	"math"
 	"math/big"
 )
 
 type ProofOfWork interface {
-	Run(ctx context.Context, b *Block) error
-	Validate(ctx context.Context, b *Block) (validated bool, err error)
+	Run(ctx context.Context, b Block) error
+	Validate(ctx context.Context, b Block) (validated bool, err error)
 }
 
 var Difficulty uint = 12
@@ -30,7 +31,7 @@ type SimpleProofOfWork struct {
 	Target *big.Int
 }
 
-func (p *SimpleProofOfWork) Run(ctx context.Context, block *Block) error {
+func (p *SimpleProofOfWork) Run(ctx context.Context, block Block) error {
 	tracer.Trace(ctx, "Starting to run proof of work...")
 	var intHash big.Int
 	var hash [32]byte
@@ -55,16 +56,20 @@ func (p *SimpleProofOfWork) Run(ctx context.Context, block *Block) error {
 	tracer.Trace(ctx, "")
 	tracer.Trace(ctx, "Finish proof of work")
 
-	block.Nonce = nonce
-	block.Hash = hash[:]
+	simpleBlock, ok := block.(*SimpleBlock)
+	if !ok {
+		return errors.New("block is not SimpleBlock")
+	}
+	simpleBlock.Nonce = nonce
+	simpleBlock.Hash = hash[:]
 
 	return nil
 }
 
-func (p *SimpleProofOfWork) Validate(_ context.Context, block *Block) (bool, error) {
+func (p *SimpleProofOfWork) Validate(_ context.Context, block Block) (bool, error) {
 	var intHash big.Int
 
-	data, err := p.InitData(block, block.Nonce)
+	data, err := p.InitData(block, block.GetNonce())
 	if err != nil {
 		return false, err
 	}
@@ -88,7 +93,7 @@ func NewProof() *SimpleProofOfWork {
 	}
 }
 
-func (p *SimpleProofOfWork) InitData(block *Block, nonce int) ([]byte, error) {
+func (p *SimpleProofOfWork) InitData(block Block, nonce int) ([]byte, error) {
 	nonceBytes, err := toHex(int64(nonce))
 	if err != nil {
 		return nil, err
@@ -100,8 +105,8 @@ func (p *SimpleProofOfWork) InitData(block *Block, nonce int) ([]byte, error) {
 	}
 
 	data := bytes.Join([][]byte{
-		block.Prevhash,
-		block.Data,
+		block.GetPrevHash(),
+		block.GetData(),
 		nonceBytes,
 		diffBytes,
 	}, []byte{})

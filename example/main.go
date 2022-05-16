@@ -21,7 +21,9 @@ func main() {
 	}
 	defer db.Close()
 
-	chain, err := blockchain.InitBlockChain(ctx, db, nil)
+	chain, err := blockchain.InitBlockChain(ctx, &blockchain.BlockChainConfigs{
+		Storage: db,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
