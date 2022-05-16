@@ -32,7 +32,7 @@ func (c *CommandLine) Run(ctx context.Context) {
 }
 
 func (c *CommandLine) AddBlock(ctx context.Context, data string) {
-	c.chain.AddBlock(ctx, data)
+	c.chain.AddBlock(ctx, []byte(data))
 }
 
 func (c *CommandLine) Print(ctx context.Context) {
@@ -47,9 +47,9 @@ func (c *CommandLine) Print(ctx context.Context) {
 			return
 		}
 
-		fmt.Printf("PrevHash: %x\n", block.Prevhash)
-		fmt.Printf("Data: %s\n", block.Data)
-		fmt.Printf("Hash: %x\n", block.Hash)
+		fmt.Printf("PrevHash: %x\n", block.GetPrevHash())
+		fmt.Printf("Data: %s\n", block.GetData())
+		fmt.Printf("Hash: %x\n", block.GetHash())
 
 		validated, err := c.chain.ValidateBlock(ctx, block)
 		if err != nil {
