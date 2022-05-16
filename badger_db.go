@@ -34,6 +34,7 @@ func (s *BadgerDbStorage) AddBlock(b *blockchain.Block) error {
 			return err
 		}
 
+		err = txn.Set(b.Hash, bytes)
 		err = txn.Set(s.lastHashKey, bytes)
 		return err
 	})
