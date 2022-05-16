@@ -7,17 +7,15 @@ import (
 	"math/big"
 )
 
+type ProofOfWork interface {
+	Run(*Block) error
+	Validate(*Block) (validated bool, err error)
+}
+
 var Difficulty uint = 12
 
 func SetDificulty(difficulty uint) {
 	Difficulty = difficulty
-}
-
-// @TODO: make this interface, the Block and Chain should rely on POW interface{} only
-type ProofOfWork struct {
-	// @TODO: make these private
-	Block  *Block
-	Target *big.Int
 }
 
 // Take the data from the block
@@ -27,16 +25,20 @@ type ProofOfWork struct {
 
 // Requirements:
 // The First few bits must contains 0s
-func (p *ProofOfWork) Run() (int, []byte, error) {
+type SimpleProofOfWork struct {
+	Target *big.Int
+}
+
+func (p *SimpleProofOfWork) Run(block *Block) error {
 	tracer.Trace("Starting to run proof of work...")
 	var intHash big.Int
 	var hash [32]byte
 
 	nonce := 0
 	for nonce < math.MaxInt64 {
-		data, err := p.InitData(nonce)
+		data, err := p.InitData(block, nonce)
 		if err != nil {
-			return -1, nil, err
+			return err
 		}
 		hash = sha256.Sum256(data)
 
@@ -52,13 +54,16 @@ func (p *ProofOfWork) Run() (int, []byte, error) {
 	tracer.Trace("")
 	tracer.Trace("Finish proof of work")
 
-	return nonce, hash[:], nil
+	block.Nonce = nonce
+	block.Hash = hash[:]
+
+	return nil
 }
 
-func (p *ProofOfWork) Validate() (bool, error) {
+func (p *SimpleProofOfWork) Validate(block *Block) (bool, error) {
 	var intHash big.Int
 
-	data, err := p.InitData(p.Block.Nonce)
+	data, err := p.InitData(block, block.Nonce)
 	if err != nil {
 		return false, err
 	}
@@ -69,7 +74,7 @@ func (p *ProofOfWork) Validate() (bool, error) {
 }
 
 // @TODO: Make this flexible
-func NewProof(block *Block) *ProofOfWork {
+func NewProof() *SimpleProofOfWork {
 	// Underlying byte look like this
 	target := big.NewInt(1)
 	// 256 bit of sha256 - difficulty
@@ -77,13 +82,12 @@ func NewProof(block *Block) *ProofOfWork {
 	// This will make sure out requirements to be met
 	// Shift all the way to the left, this will leave Difficulty bits as 0 from the beginning
 	target.Lsh(target, 256-Difficulty)
-	return &ProofOfWork{
-		Block:  block,
+	return &SimpleProofOfWork{
 		Target: target,
 	}
 }
 
-func (p *ProofOfWork) InitData(nonce int) ([]byte, error) {
+func (p *SimpleProofOfWork) InitData(block *Block, nonce int) ([]byte, error) {
 	nonceBytes, err := toHex(int64(nonce))
 	if err != nil {
 		return nil, err
@@ -95,8 +99,8 @@ func (p *ProofOfWork) InitData(nonce int) ([]byte, error) {
 	}
 
 	data := bytes.Join([][]byte{
-		p.Block.Prevhash,
-		p.Block.Data,
+		block.Prevhash,
+		block.Data,
 		nonceBytes,
 		diffBytes,
 	}, []byte{})

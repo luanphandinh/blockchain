@@ -2,29 +2,32 @@ package blockchain
 
 type BlockChain struct {
 	storage Storage
+	pow     ProofOfWork
 }
 
-func Genesis() (*Block, error) {
-	tracer.Trace("Creating genesis block")
-	// @TODO: put this in either from env, or some config.
-	return NewBlock("Geneisis", []byte{})
-}
-
-func InitBlockChain(storage Storage) (*BlockChain, error) {
+func InitBlockChain(storage Storage, pow ProofOfWork) (*BlockChain, error) {
 	if storage == nil {
 		tracer.Trace("InitBlockChain with default memoryStorage")
 		storage = newMemoryStorage()
 	}
 
-	// @TODO: probs need to start transaction wrapper here
+	if pow == nil {
+		tracer.Trace("InitBlockChain with default simpleProofOfWork")
+		pow = NewProof()
+	}
+
+	chain := &BlockChain{
+		storage: storage,
+		pow:     pow,
+	}
+
 	lastBlock, err := storage.GetLastBlock()
 	if err != nil {
 		return nil, err
 	}
 
-	blocks := make([]*Block, 0)
 	if lastBlock == nil {
-		genesis, err := Genesis()
+		genesis, err := chain.Genesis()
 		if err != nil {
 			return nil, err
 		}
@@ -33,20 +36,26 @@ func InitBlockChain(storage Storage) (*BlockChain, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		blocks = append(blocks, genesis)
-	} else {
-		blocks = append(blocks, lastBlock)
 	}
 
-	return &BlockChain{
-		storage: storage,
-	}, nil
+	return chain, nil
 }
 
-func (chain *BlockChain) GetBlocks() []*Block {
-	blocks, _ := chain.storage.GetBlocks()
-	return blocks
+func (chain *BlockChain) Genesis() (*Block, error) {
+	tracer.Trace("Creating genesis block")
+	// @TODO: put this in either from env, or some config.
+	return chain.NewBlock("Geneisis", []byte{})
+}
+
+func (chain *BlockChain) NewBlock(data string, prevHash []byte) (*Block, error) {
+	newBlock := NewBlock(data, prevHash)
+
+	err := chain.pow.Run(newBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	return newBlock, nil
 }
 
 func (chain *BlockChain) AddBlock(data string) error {
@@ -55,7 +64,7 @@ func (chain *BlockChain) AddBlock(data string) error {
 		return err
 	}
 
-	newBlock, err := NewBlock(data, prevBlock.Hash)
+	newBlock, err := chain.NewBlock(data, prevBlock.Hash)
 	if err != nil {
 		return err
 	}

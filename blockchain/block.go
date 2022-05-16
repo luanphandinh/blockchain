@@ -12,19 +12,11 @@ type Block struct {
 	Nonce    int
 }
 
-func NewBlock(data string, prevHash []byte) (*Block, error) {
+func NewBlock(data string, prevHash []byte) *Block {
 	tracer.Tracef("Create new block with data: %x, prevHash: %x", data, prevHash)
 	block := &Block{[]byte{}, []byte(data), prevHash, 0}
-	p := NewProof(block)
 
-	nonce, hash, err := p.Run()
-	if err != nil {
-		return nil, err
-	}
-	block.Hash = hash
-	block.Nonce = nonce
-
-	return block, nil
+	return block
 }
 
 func (b *Block) Serialize() ([]byte, error) {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/luanphandinh/blockchain/blockchain"
@@ -14,7 +13,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	chain, err := blockchain.InitBlockChain(db)
+	chain, err := blockchain.InitBlockChain(db, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,16 +31,16 @@ func main() {
 		}
 	}
 
-	for _, block := range chain.GetBlocks() {
-		fmt.Printf("PrevHash: %x\n", block.Prevhash)
-		fmt.Printf("Data: %s\n", block.Data)
-		fmt.Printf("Hash: %x\n", block.Hash)
+	// for _, block := range chain.GetBlocks() {
+	// 	fmt.Printf("PrevHash: %x\n", block.Prevhash)
+	// 	fmt.Printf("Data: %s\n", block.Data)
+	// 	fmt.Printf("Hash: %x\n", block.Hash)
 
-		p := blockchain.NewProof(block)
-		validated, err := p.Validate()
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("target: %x, validated: %v\n", p.Target, validated)
-	}
+	// 	p := blockchain.NewProof(block)
+	// 	validated, err := p.Validate()
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	fmt.Printf("target: %x, validated: %v\n", p.Target, validated)
+	// }
 }
