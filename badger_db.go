@@ -10,8 +10,11 @@ type BadgerDbStorage struct {
 	lastHashKey []byte
 }
 
-func newBaderDbStorage(path string, lastHashKey []byte) (blockchain.Storage, error) {
+func newBaderDbStorage(path string, lastHashKey []byte, debug bool) (*BadgerDbStorage, error) {
 	opts := badger.DefaultOptions(path)
+	if !debug {
+		opts.Logger = nil
+	}
 	db, err := badger.Open(opts)
 	if err != nil {
 		return nil, err
@@ -74,4 +77,8 @@ func (s *BadgerDbStorage) GetBlock(key []byte) (*blockchain.Block, error) {
 
 func (s *BadgerDbStorage) GetBlocks() ([]*blockchain.Block, error) {
 	return nil, nil
+}
+
+func (s *BadgerDbStorage) Close() error {
+	return s.db.Close()
 }

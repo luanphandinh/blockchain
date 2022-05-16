@@ -13,10 +13,11 @@ func main() {
 		blockchain.SetTracer(&simpleTracer{})
 	}
 
-	db, err := newBaderDbStorage("./tmp/db", []byte("last_hash"))
+	db, err := newBaderDbStorage("./tmp/db", []byte("last_hash"), *debug)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 
 	chain, err := blockchain.InitBlockChain(db, nil)
 	if err != nil {
