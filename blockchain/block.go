@@ -1,5 +1,11 @@
 package blockchain
 
+import (
+	"bytes"
+	"context"
+	"encoding/gob"
+)
+
 type Block struct {
 	Hash     []byte
 	Data     []byte
@@ -7,12 +13,34 @@ type Block struct {
 	Nonce    int
 }
 
-func NewBlock(data string, prevHash []byte) *Block {
+func NewBlock(ctx context.Context, data string, prevHash []byte) *Block {
+	tracer.Tracef(ctx, "Create new block with data: %x, prevHash: %x", data, prevHash)
 	block := &Block{[]byte{}, []byte(data), prevHash, 0}
-	p := NewProof(block)
-	nonce, hash := p.Run()
-	block.Hash = hash
-	block.Nonce = nonce
 
 	return block
+}
+
+func (b *Block) Serialize() ([]byte, error) {
+	var res bytes.Buffer
+	encoder := gob.NewEncoder(&res)
+
+	err := encoder.Encode(b)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Bytes(), nil
+}
+
+func DeserializeBlock(data []byte) (*Block, error) {
+	var block Block
+
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+	err := decoder.Decode(&block)
+	if err != nil {
+		return nil, err
+	}
+
+	return &block, nil
 }

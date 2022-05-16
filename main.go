@@ -1,24 +1,31 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"flag"
+	"log"
 
 	"github.com/luanphandinh/blockchain/blockchain"
 )
 
 func main() {
-	chain := blockchain.InitBlockChain()
-
-	chain.AddBlock("First block after Genesis")
-	chain.AddBlock("Second block after Genesis")
-	chain.AddBlock("Third block after Genesis")
-
-	for _, block := range chain.GetBlocks() {
-		fmt.Printf("PrevHash: %x\n", block.Prevhash)
-		fmt.Printf("Data: %s\n", block.Data)
-		fmt.Printf("Hash: %x\n", block.Hash)
-
-		p := blockchain.NewProof(block)
-		fmt.Printf("target: %x, validated: %v\n", p.Target, p.Validate())
+	ctx := context.Background()
+	flag.Parse()
+	if *debug {
+		blockchain.SetTracer(&simpleTracer{})
 	}
+
+	db, err := newBaderDbStorage("./tmp/db", []byte("last_hash"), *debug)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	chain, err := blockchain.InitBlockChain(ctx, db, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cmd := &CommandLine{chain}
+	cmd.Run(ctx)
 }

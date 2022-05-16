@@ -2,38 +2,48 @@ package blockchain
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
-	"fmt"
 	"math"
 	"math/big"
 )
 
+type ProofOfWork interface {
+	Run(ctx context.Context, b *Block) error
+	Validate(ctx context.Context, b *Block) (validated bool, err error)
+}
+
+var Difficulty uint = 12
+
+func SetDificulty(difficulty uint) {
+	Difficulty = difficulty
+}
+
 // Take the data from the block
-// create a counter (nounce) which starts at 0
+// create a counter (nonce) which starts at 0
 // create a hash of data plus counter
 // check the hash to see if it meets a set of requirements (quite vauge)
 
 // Requirements:
 // The First few bits must contains 0s
-
-const Difficulty = 12
-
-type ProofOfWork struct {
-	// @TODO: make these private
-	Block  *Block
+type SimpleProofOfWork struct {
 	Target *big.Int
 }
 
-func (p *ProofOfWork) Run() (int, []byte) {
+func (p *SimpleProofOfWork) Run(ctx context.Context, block *Block) error {
+	tracer.Trace(ctx, "Starting to run proof of work...")
 	var intHash big.Int
 	var hash [32]byte
 
 	nonce := 0
 	for nonce < math.MaxInt64 {
-		data := p.InitData(nonce)
+		data, err := p.InitData(block, nonce)
+		if err != nil {
+			return err
+		}
 		hash = sha256.Sum256(data)
 
-		fmt.Printf("\r%x", hash)
+		tracer.TraceCarriagef(ctx, "\r%x", hash)
 
 		intHash.SetBytes(hash[:])
 		if intHash.Cmp(p.Target) == -1 {
@@ -42,22 +52,30 @@ func (p *ProofOfWork) Run() (int, []byte) {
 		nonce++
 	}
 
-	fmt.Println()
+	tracer.Trace(ctx, "")
+	tracer.Trace(ctx, "Finish proof of work")
 
-	return nonce, hash[:]
+	block.Nonce = nonce
+	block.Hash = hash[:]
+
+	return nil
 }
 
-func (p *ProofOfWork) Validate() bool {
+func (p *SimpleProofOfWork) Validate(_ context.Context, block *Block) (bool, error) {
 	var intHash big.Int
 
-	data := p.InitData(p.Block.Nonce)
+	data, err := p.InitData(block, block.Nonce)
+	if err != nil {
+		return false, err
+	}
 	hash := sha256.Sum256(data)
 	intHash.SetBytes(hash[:])
 
-	return intHash.Cmp(p.Target) == -1
+	return intHash.Cmp(p.Target) == -1, nil
 }
 
-func NewProof(block *Block) *ProofOfWork {
+// @TODO: Make this flexible
+func NewProof() *SimpleProofOfWork {
 	// Underlying byte look like this
 	target := big.NewInt(1)
 	// 256 bit of sha256 - difficulty
@@ -65,19 +83,28 @@ func NewProof(block *Block) *ProofOfWork {
 	// This will make sure out requirements to be met
 	// Shift all the way to the left, this will leave Difficulty bits as 0 from the beginning
 	target.Lsh(target, 256-Difficulty)
-	return &ProofOfWork{
-		Block:  block,
+	return &SimpleProofOfWork{
 		Target: target,
 	}
 }
 
-func (p *ProofOfWork) InitData(nounce int) []byte {
+func (p *SimpleProofOfWork) InitData(block *Block, nonce int) ([]byte, error) {
+	nonceBytes, err := toHex(int64(nonce))
+	if err != nil {
+		return nil, err
+	}
+
+	diffBytes, err := toHex(int64(Difficulty))
+	if err != nil {
+		return nil, err
+	}
+
 	data := bytes.Join([][]byte{
-		p.Block.Prevhash,
-		p.Block.Data,
-		toHex(int64(nounce)),
-		toHex(int64(Difficulty)),
+		block.Prevhash,
+		block.Data,
+		nonceBytes,
+		diffBytes,
 	}, []byte{})
 
-	return data
+	return data, nil
 }
