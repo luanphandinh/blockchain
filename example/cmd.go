@@ -2,17 +2,10 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 
 	"github.com/luanphandinh/blockchain/blockchain"
-)
-
-var (
-	addBlock   = flag.String("add", "", "add new block with data")
-	printChain = flag.Bool("print", false, "print out the chain")
-	debug      = flag.Bool("debug", false, "debug")
 )
 
 type CommandLine struct {

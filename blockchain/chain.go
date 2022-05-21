@@ -17,6 +17,7 @@ type BlockChain struct {
 type BlockChainIterator struct {
 	currentBlock Block
 	chain        *BlockChain
+	done         bool
 }
 
 func InitBlockChain(
@@ -107,22 +108,32 @@ func (chain *BlockChain) AddBlock(ctx context.Context, data []byte) error {
 }
 
 func (chain *BlockChain) NewIterator() *BlockChainIterator {
-	return &BlockChainIterator{nil, chain}
+	return &BlockChainIterator{nil, chain, false}
 }
 
-func (iterator *BlockChainIterator) Next(ctx context.Context) (Block, error) {
-	var block Block
-	var err error
-	if iterator.currentBlock == nil {
-		block, err = iterator.chain.storage.GetLastBlock(ctx)
-	} else {
-		block, err = iterator.chain.storage.GetBlock(ctx, iterator.currentBlock.GetPrevHash())
+func (i *BlockChainIterator) Next(ctx context.Context) (block Block, err error) {
+	if i.done {
+		return nil, nil
 	}
 
-	iterator.currentBlock = block
+	if i.currentBlock == nil {
+		block, err = i.chain.storage.GetLastBlock(ctx)
+	} else {
+		block, err = i.chain.storage.GetBlock(ctx, i.currentBlock.GetPrevHash())
+	}
+
 	if err != nil {
 		return nil, err
 	}
+	i.currentBlock = block
+
+	if prevHash := block.GetPrevHash(); prevHash == nil || len(prevHash) == 0 {
+		i.done = true
+	}
 
 	return block, nil
+}
+
+func (i *BlockChainIterator) IsDone() bool {
+	return i.done
 }
